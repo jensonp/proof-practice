@@ -16,6 +16,11 @@ A progressive guide to writing mathematical proofs — built for someone with ze
 8. [Quantifiers — ∀ and ∃ Explicitly](#8-quantifiers----and--explicitly)
 9. [Existential Proofs by Construction](#9-existential-proofs-by-construction)
 10. [Universal Statements by Contradiction](#10-universal-statements-by-contradiction)
+11. [Language and String Facts over Σ\*](#11-language-and-string-facts-over-)
+12. [Closure Properties of Decidable Languages](#12-closure-properties-of-decidable-languages)
+13. [Simulation Arguments](#13-simulation-arguments)
+14. [Equivalence of Two Definitions](#14-equivalence-of-two-definitions)
+15. [Diagonalization — The Halting Problem](#15-diagonalization--the-halting-problem)
 
 ---
 
@@ -583,6 +588,407 @@ Both cases lead to contradictions. Therefore the assumption that there are finit
 
 ---
 
+## 11. Language and String Facts over Σ\*
+
+### Background
+
+Before writing proofs about languages and Turing machines, you need the objects to be fully concrete.
+
+- An **alphabet** Σ is any finite nonempty set of symbols. Example: Σ = `{0, 1}`.
+- A **string** over Σ is a finite sequence of symbols from Σ. The **empty string** ε has length zero.
+- Σ\* denotes the set of **all** finite strings over Σ, including ε.
+- A **language** over Σ is any subset `L ⊆ Σ*`.
+
+Proofs about languages are just set proofs (Section 2) applied to subsets of Σ*. The only new element is that "elements" are now strings, not numbers.
+
+### The Technique
+
+All techniques from Sections 1–10 apply directly. The most common pattern:
+- To prove `L₁ ⊆ L₂`: take arbitrary string `w`, assume `w ∈ L₁`, derive `w ∈ L₂`.
+- To prove `L₁ = L₂`: prove both `L₁ ⊆ L₂` and `L₂ ⊆ L₁`.
+- To prove `L` is infinite: construct infinitely many distinct strings in `L`, or use contradiction.
+
+### Key Definitions
+
+- The **concatenation** of strings `x` and `y` is written `xy`. Its length is `|xy| = |x| + |y|`.
+- The **reverse** of `w = a₁a₂...aₙ` is `wᴿ = aₙ...a₂a₁`.
+- `Lᴿ = { wᴿ : w ∈ L }` is the **reverse language**.
+- `L₁ · L₂ = { xy : x ∈ L₁, y ∈ L₂ }` is the **concatenation** of two languages.
+- `L* = { w₁w₂...wₖ : k ≥ 0, each wᵢ ∈ L }` is the **Kleene star**. Note: ε ∈ L* always.
+
+### Example Proof
+
+**Claim:** For any language `L`, `ε ∈ L*`.
+
+**Proof:**
+By definition, `L* = { w₁w₂...wₖ : k ≥ 0, each wᵢ ∈ L }`.
+
+Take `k = 0`. The concatenation of zero strings is the empty string `ε`. Since `k = 0` is a valid choice, `ε ∈ L*`. □
+
+---
+
+**Claim:** If `L₁ ⊆ L₂`, then `L₁* ⊆ L₂*`.
+
+**Proof:**
+Assume `L₁ ⊆ L₂`. Let `w` be an arbitrary string and assume `w ∈ L₁*`.
+
+By definition of Kleene star, `w = w₁w₂...wₖ` for some `k ≥ 0` where each `wᵢ ∈ L₁`.
+
+Since `L₁ ⊆ L₂`, each `wᵢ ∈ L₂`.
+
+Therefore `w = w₁w₂...wₖ` is a concatenation of strings from `L₂`, so `w ∈ L₂*` by definition.
+
+Since `w` was arbitrary, `L₁* ⊆ L₂*`. □
+
+---
+
+**Claim:** The language `L = { 0ⁿ : n ≥ 0 }` (all strings of the form `0...0`) is infinite.
+
+**Proof:**
+For each `n ≥ 0`, let `wₙ` denote the string consisting of exactly `n` copies of `0`. Then `wₙ ∈ L` for all `n ≥ 0`.
+
+If `n ≠ m`, then `|wₙ| = n ≠ m = |wₘ|`, so `wₙ ≠ wₘ`. Therefore the strings `w₀, w₁, w₂, ...` are pairwise distinct and all belong to `L`.
+
+Since `L` contains infinitely many distinct elements, `L` is infinite. □
+
+### What to Notice
+
+- Proofs about languages are still set proofs. The variable `w` plays the role of `x` from Section 2.
+- We proved infiniteness by **constructing an infinite family of distinct witnesses** — combining Sections 9 and 10.
+- Length is a useful tool: two strings of different lengths are always different.
+
+### Practice Problems
+
+1. Prove: for any language `L`, `L ⊆ L*`.
+2. Prove: `(L*)* = L*` for any language `L`.
+3. Let `L = { w ∈ {0,1}* : w contains an equal number of 0s and 1s }`. Prove that `L` is infinite.
+
+---
+
+## 12. Closure Properties of Decidable Languages
+
+### Background
+
+A language `L` is **decidable** if there exists a Turing machine `M` that halts on every input and accepts exactly the strings in `L`.
+
+A **closure property** says: if language(s) with property `P` are combined in some way, the result also has property `P`. For decidable languages, the standard operations are union, intersection, complement, and concatenation.
+
+Proving a closure property requires **constructing a new machine** from the given machines. The proof has two parts:
+1. **Describe the construction:** What does the new machine do, step by step?
+2. **Verify correctness:** Show the constructed machine actually decides the target language.
+
+This is a new kind of proof. You are not just manipulating symbols — you are building an object and then proving it has a property.
+
+### The Technique
+
+Template for a closure proof:
+
+```
+Let L₁ and L₂ be decidable languages.
+Let M₁ decide L₁ and M₂ decide L₂.   [using the hypothesis]
+Construct machine M as follows: ...
+Claim: M decides L₁ [operation] L₂.
+Proof of correctness:
+  (⇒) If w ∈ L₁ [op] L₂, then M accepts w.
+  (⇐) If w ∉ L₁ [op] L₂, then M rejects w.
+  M halts on every input because ...
+```
+
+### Example Proof
+
+**Claim:** If `L₁` and `L₂` are decidable, then `L₁ ∪ L₂` is decidable.
+
+**Proof:**
+
+Let `M₁` be a decider for `L₁` and `M₂` be a decider for `L₂`. Both halt on every input.
+
+**Construction:** Define machine `M` that on input `w`:
+1. Run `M₁` on `w`. If `M₁` accepts, **accept**.
+2. Run `M₂` on `w`. If `M₂` accepts, **accept**.
+3. **Reject**.
+
+**Claim:** `M` decides `L₁ ∪ L₂`.
+
+**Correctness:**
+
+**(⇒) If `w ∈ L₁ ∪ L₂`, then `M` accepts `w`.**
+
+Assume `w ∈ L₁ ∪ L₂`. By definition of union, `w ∈ L₁` or `w ∈ L₂`.
+- If `w ∈ L₁`: since `M₁` decides `L₁`, `M₁` accepts `w`. So `M` accepts at step 1.
+- If `w ∈ L₂`: since `M₂` decides `L₂`, `M₂` accepts `w`. So `M` accepts at step 2.
+In either case `M` accepts. □
+
+**(⇐) If `w ∉ L₁ ∪ L₂`, then `M` rejects `w`.**
+
+Assume `w ∉ L₁ ∪ L₂`. Then `w ∉ L₁` and `w ∉ L₂`.
+- Since `M₁` decides `L₁` and `w ∉ L₁`, `M₁` rejects `w`. So `M` does not accept at step 1.
+- Since `M₂` decides `L₂` and `w ∉ L₂`, `M₂` rejects `w`. So `M` does not accept at step 2.
+- `M` reaches step 3 and rejects. □
+
+**Halting:** `M₁` halts on every input (it is a decider). `M₂` halts on every input. `M` runs `M₁` then `M₂` sequentially, and halts regardless of outcome. Therefore `M` halts on every input. □
+
+Since `M` accepts exactly `L₁ ∪ L₂` and halts on all inputs, `M` decides `L₁ ∪ L₂`. □
+
+### What to Notice
+
+- The construction is **explicit** — we described every step the machine takes.
+- Correctness was a **biconditional** (Section 6): we proved both directions separately.
+- We separately argued **halting** — this is mandatory for deciders and easy to forget.
+
+### Practice Problems
+
+1. Prove: if `L₁` and `L₂` are decidable, then `L₁ ∩ L₂` is decidable.
+2. Prove: if `L` is decidable, then its complement `L̅ = Σ* \ L` is decidable.
+3. Prove: if `L₁` and `L₂` are decidable, then `L₁ \ L₂ = { w : w ∈ L₁ and w ∉ L₂ }` is decidable.
+
+---
+
+## 13. Simulation Arguments
+
+### Background
+
+A **simulation argument** proves that one computational model is at least as powerful as another, or that two models are equivalent. The proof has a fixed structure:
+
+1. **Given:** A machine of type A.
+2. **Construct:** A machine of type B that simulates A.
+3. **Verify:** The constructed machine of type B accepts exactly the same inputs as A.
+
+Simulation proofs appear throughout computability and complexity theory. The key discipline is: you must describe the simulating machine **concretely enough** that its behavior is unambiguous, and then prove correctness formally.
+
+### The Technique
+
+The most important simulation in this course: every DTM is a special case of an NTM.
+
+Recall:
+- A **DTM** has transition function `δ_D : Q × Γ → Q × Γ × {L,R}` (at most one move per state-symbol pair).
+- An **NTM** has transition function `δ_N : Q × Γ → P(Q × Γ × {L,R})` (a set of possible moves).
+
+### Example Proof
+
+**Claim:** Every deterministic Turing machine is a special case of a nondeterministic Turing machine. Formally: if `L` is decided by a DTM, then `L` is decided by an NTM.
+
+**Proof:**
+
+Let `M = (Q, Σ, Γ, δ_D, q₀, q_accept, q_reject)` be a DTM that decides `L`.
+
+**Construction:** Define NTM `N = (Q, Σ, Γ, δ_N, q₀, q_accept, q_reject)` where for every `q ∈ Q` and `a ∈ Γ`:
+
+```
+δ_N(q, a) = { δ_D(q, a) }    if δ_D(q, a) is defined
+δ_N(q, a) = ∅                if δ_D(q, a) is undefined
+```
+
+In words: `N` has the same states, alphabets, and start/halt states as `M`. Its transition function wraps each deterministic move in a singleton set.
+
+**Correctness:**
+
+We verify that `N` accepts exactly the strings `M` accepts.
+
+**(⇒) If `M` accepts `w`, then `N` accepts `w`.**
+
+Since `M` accepts `w`, there is a computation of `M` on `w` that reaches `q_accept`. This computation is a finite sequence of configurations `C₀, C₁, ..., Cₖ` where `C₀` is the start configuration on `w` and `Cₖ` has state `q_accept`.
+
+Each step `Cᵢ → Cᵢ₊₁` follows `δ_D`. By construction, `δ_D(q, a) = (r, b, D)` implies `(r, b, D) ∈ δ_N(q, a)`. So every step of `M`'s computation is a legal step of `N`.
+
+Therefore the same sequence `C₀, C₁, ..., Cₖ` is a valid computation branch of `N` that reaches `q_accept`. So `N` accepts `w`. □
+
+**(⇐) If `N` accepts `w`, then `M` accepts `w`.**
+
+Since `N` accepts `w`, some computation branch of `N` on `w` reaches `q_accept`. Let this branch be `C₀, C₁, ..., Cₖ`.
+
+Each step `Cᵢ → Cᵢ₊₁` uses some `(r, b, D) ∈ δ_N(q, a)`. By construction, `δ_N(q, a)` contains at most one element (namely `δ_D(q, a)`). So the only possible move is `δ_D(q, a)`.
+
+Therefore `C₀, C₁, ..., Cₖ` is also a valid computation of `M`, and it reaches `q_accept`. So `M` accepts `w`. □
+
+**Halting:** `M` halts on every input. By the argument above, `N`'s only branch on any input follows `M`'s unique computation. Since `M` halts, this branch halts. Therefore `N` halts on every input (all branches halt). So `N` is a decider. □
+
+Since `N` accepts exactly the strings `M` accepts and halts on all inputs, `N` decides `L`. □
+
+### What to Notice
+
+- We gave a **concrete construction**: we defined `δ_N` precisely in terms of `δ_D`.
+- We proved **both directions** of correctness as a biconditional (Section 6).
+- We proved **halting** separately — it is not automatic.
+- We reused the structure of the original machine's computation rather than re-deriving everything.
+
+### Practice Problems
+
+1. Prove: an NTM with at most one transition per state-symbol pair is equivalent to a DTM.
+2. Prove: a two-tape DTM can be simulated by a single-tape DTM. *(Describe the encoding and verify acceptance equivalence.)*
+3. Prove: if a language is decided by a DTM, then it is also recognized by a DTM. *(Hint: a decider is already a recognizer.)*
+
+---
+
+## 14. Equivalence of Two Definitions
+
+### Background
+
+In complexity theory, **NP** has two standard definitions:
+
+- **Definition A (NTM-based):** A language `L` is in NP if there exists a nondeterministic Turing machine `N` that decides `L` in polynomial time — meaning every branch of `N` on any input of length `n` halts within `p(n)` steps for some polynomial `p`.
+
+- **Definition B (Verifier-based):** A language `L` is in NP if there exists a deterministic polynomial-time Turing machine `V` (a verifier) and a polynomial `q` such that for every string `w`:
+  - If `w ∈ L`, there exists a certificate `c` with `|c| ≤ q(|w|)` such that `V(w, c)` accepts.
+  - If `w ∉ L`, then for all `c`, `V(w, c)` rejects.
+
+Proving these definitions are equivalent is an **iff proof** (Section 6), where each direction requires constructing a machine and verifying its polynomial time bound.
+
+### The Technique
+
+An equivalence of definitions proof has the form:
+
+```
+"Definition A" ⇔ "Definition B"
+
+(⇒) Assume L satisfies Definition A. Construct an object satisfying Definition B.
+     Verify correctness and time bound.
+
+(⇐) Assume L satisfies Definition B. Construct an object satisfying Definition A.
+     Verify correctness and time bound.
+```
+
+### Example Proof
+
+**Claim:** Definition A and Definition B for NP are equivalent.
+
+**Proof:**
+
+**(⇒) If `L ∈ NP` by Definition A, then `L ∈ NP` by Definition B.**
+
+Assume `N` is an NTM deciding `L` in polynomial time `p(n)`.
+
+**Construction of verifier `V`:**
+A certificate `c` for input `w` will encode the sequence of nondeterministic choices made along one accepting branch of `N` on `w`. Since `N` runs in `p(n)` steps, each branch has length at most `p(n)`, and at each step there are at most `b` choices (where `b` is the maximum branching factor of `N`, a constant). So `c` can be encoded as a string of length at most `p(n) · ⌈log b⌉`, which is polynomial in `n`.
+
+Define `V(w, c)` as follows:
+1. Simulate `N` on input `w`, following the choices encoded in `c` at each step.
+2. If the simulation reaches `q_accept`, **accept**. Otherwise **reject**.
+
+**Time bound:** `V` simulates `N` for at most `p(n)` steps, each step taking polynomial time. So `V` runs in polynomial time. □
+
+**Correctness:**
+- If `w ∈ L`: since `N` accepts `w`, there exists an accepting branch. Let `c` encode that branch's choices. Then `V(w, c)` simulates that branch and accepts.
+- If `w ∉ L`: since `N` does not accept `w`, no branch reaches `q_accept`. For any `c`, `V(w, c)` follows the choices of `c` and never reaches `q_accept`, so it rejects. □
+
+**(⇐) If `L ∈ NP` by Definition B, then `L ∈ NP` by Definition A.**
+
+Assume `V` is a polynomial-time verifier for `L` with certificate length bound `q(n)`.
+
+**Construction of NTM `N`:**
+Define `N` on input `w` (where `|w| = n`) as follows:
+1. Nondeterministically write a string `c` of length at most `q(n)` on a second tape. (At each of `q(n)` steps, nondeterministically choose a symbol from Σ or stop.)
+2. Run `V(w, c)` deterministically.
+3. Accept if and only if `V(w, c)` accepts.
+
+**Time bound:** Step 1 takes `q(n)` nondeterministic steps. Step 2 takes polynomial time in `|w| + |c| ≤ n + q(n)`, which is polynomial in `n`. So each branch of `N` runs in polynomial time. □
+
+**Correctness:**
+- If `w ∈ L`: by Definition B, there exists a certificate `c` with `|c| ≤ q(n)` such that `V(w, c)` accepts. The branch of `N` that writes exactly this `c` in step 1 will accept in step 3. So `N` accepts `w`.
+- If `w ∉ L`: by Definition B, for all `c`, `V(w, c)` rejects. Every branch of `N` writes some `c` and runs `V(w, c)`, which rejects. So no branch of `N` accepts. So `N` does not accept `w`. □
+
+Since both directions hold, the two definitions are equivalent. □
+
+### What to Notice
+
+- This is the largest proof so far. It has **four sub-proofs**: construction + correctness + time for each direction.
+- Each direction required **building an object** (a verifier or an NTM) and then **verifying two things**: correctness and polynomial time.
+- The certificate in direction (⇒) is exactly the **sequence of nondeterministic choices** — connecting back to what Section 5.8 of the README says about computation trees.
+
+### Practice Problems
+
+1. In the (⇒) direction, why does the certificate `c` have polynomial length? Write this argument in one complete paragraph.
+2. In the (⇐) direction, why does the NTM `N` halt on all branches? Give the halting argument explicitly.
+3. Define co-NP informally. State and prove: `L ∈` co-NP if and only if `L̅ ∈` NP.
+
+---
+
+## 15. Diagonalization — The Halting Problem
+
+### Background
+
+Diagonalization is the proof technique used to show that certain problems are **undecidable** — no Turing machine can solve them, no matter how much time or space it uses.
+
+The core idea: assume a machine `M` solves the problem. Construct a new machine `D` that uses `M` as a subroutine. Feed `D` its own description as input. Show that `M` existing causes `D` to contradict itself — `D` accepts if and only if it rejects. This is impossible, so `M` cannot exist.
+
+The name "diagonalization" comes from Cantor's diagonal argument: the constructed object `D` is designed to differ from every machine at exactly the point where the machine is asked about itself.
+
+### Key Definitions
+
+- `<M>` denotes the **encoding** of machine `M` as a string over `{0,1}`. Every Turing machine can be encoded as a finite binary string.
+- The **halting problem** is the language `HALT = { <M, w> : M halts on input w }`.
+- The **acceptance problem** is `A_TM = { <M, w> : M accepts w }`.
+- A language is **undecidable** if no Turing machine decides it.
+
+### The Technique
+
+Diagonalization proof template:
+
+```
+Assume, for contradiction, that machine H decides the target language.
+Construct machine D using H as a subroutine.
+Run D on input <D> (D's own description).
+Show: D accepts <D> ⇔ D rejects <D>.
+This is a contradiction. Therefore H cannot exist.
+```
+
+### Example Proof
+
+**Claim:** `A_TM = { <M, w> : M accepts w }` is undecidable.
+
+**Proof:**
+
+Assume, for the sake of contradiction, that `A_TM` is decidable. Let `H` be a decider for `A_TM`. Then `H` halts on every input and:
+- `H` accepts `<M, w>` if `M` accepts `w`.
+- `H` rejects `<M, w>` if `M` does not accept `w`.
+
+**Construction of `D`:** Define machine `D` that on input `<M>` (the encoding of a Turing machine `M`):
+1. Run `H` on input `<M, <M>>`. (Ask: does machine `M` accept its own description?)
+2. If `H` **accepts**, then **reject**.
+3. If `H` **rejects**, then **accept**.
+
+`D` is a valid Turing machine because `H` is assumed to exist and halt on all inputs, so step 1 always terminates.
+
+**The diagonal contradiction:** Run `D` on its own description `<D>`.
+
+`D` executes step 1: run `H` on `<D, <D>>`. Since `H` decides `A_TM`, `H` accepts `<D, <D>>` if and only if `D` accepts `<D>`.
+
+Now trace the two cases:
+
+**Case 1:** Suppose `D` accepts `<D>`.
+Then `H` accepts `<D, <D>>` (since `H` is correct about `D` accepting `<D>`).
+Then by step 2 of `D`'s construction, `D` **rejects** `<D>`. Contradiction.
+
+**Case 2:** Suppose `D` does not accept `<D>`.
+Then `H` rejects `<D, <D>>` (since `H` is correct about `D` not accepting `<D>`).
+Then by step 3 of `D`'s construction, `D` **accepts** `<D>`. Contradiction.
+
+Both cases are impossible. The assumption that `H` exists leads to a contradiction. Therefore `A_TM` is undecidable. □
+
+### What to Notice
+
+- The proof is a **proof by contradiction** (Section 5) at the outer level.
+- The contradiction is not a numerical impossibility — it is a **logical impossibility**: `D` accepts `<D>` if and only if it does not.
+- The machine `D` is designed specifically to **invert** whatever `H` says. This is the diagonal.
+- We never said anything about what `D` does on inputs other than `<D>`. Only the self-referential case matters.
+- The proof structure assumes that a Turing machine **can be encoded as a string** and **can receive its own encoding as input**. Both are true and can themselves be proved, but are taken as established here.
+
+### Connection to Previous Sections
+
+| Section | Technique used in this proof |
+|---|---|
+| 5 | Outer structure is proof by contradiction |
+| 8 | Negating the acceptance condition carefully |
+| 12 | Constructing a machine explicitly |
+| 13 | Using one machine (`H`) as a subroutine inside another (`D`) |
+
+### Practice Problems
+
+1. Prove: `HALT = { <M, w> : M halts on w }` is undecidable. *(Reduce from `A_TM`: assume `HALT` is decidable, build a decider for `A_TM`, derive a contradiction.)*
+2. Explain in one paragraph why the construction of `D` in the proof above would fail if `H` were only a recognizer (might loop) rather than a decider.
+3. State the claim "the complement of `A_TM` is not Turing-recognizable" and outline the proof. *(Hint: use the fact that if both `A_TM` and its complement were recognizable, `A_TM` would be decidable.)*
+
+---
+
 ## Summary of Techniques
 
 | # | Technique | Open with | Useful when |
@@ -597,16 +1003,18 @@ Both cases lead to contradictions. Therefore the assumption that there are finit
 | 8 | Quantifier manipulation | Translate ∀/∃ to English first | Before any proof involving quantifiers |
 | 9 | Construction | Exhibit the witness, verify it | Proving ∃x, P(x) |
 | 10 | Universal by contradiction | Negate ∀ to get ∃, derive contradiction | Infiniteness, universal negatives |
+| 11 | Language/string facts | "Let w be arbitrary, assume w ∈ L" | Proving L₁ ⊆ L₂, language properties |
+| 12 | Closure properties | Construct machine, prove correctness + halting | Decidable/recognizable language operations |
+| 13 | Simulation | Describe machine B mimicking machine A | Equivalence of computational models |
+| 14 | Equivalence of definitions | Two-direction iff, each direction builds a machine | Showing two characterizations define the same class |
+| 15 | Diagonalization | Assume decider H exists; build self-contradicting D | Undecidability |
 
 ---
 
-## What Comes Next (Steps 11–20)
+## What Comes Next (Steps 16–20)
 
-Once the above are comfortable, the next levels introduce:
-
-- **11.** Language/set facts over Σ* — applying the above to formal language theory
-- **12.** Closure properties — proving decidable/recognizable languages are closed under operations
-- **13.** Simulation arguments — constructing one machine from another and verifying correctness
-- **14.** Equivalence of definitions — NTM-based NP equals verifier-based NP
-- **15.** Diagonalization — the halting problem
-- **16–20.** Reductions, NP membership, NP-hardness, NP-completeness
+- **16.** Reduction correctness — four things to verify: computable, total, yes→yes, no→no
+- **17.** Proving a specific problem is undecidable via reduction
+- **18.** Proving NP membership — exhibit certificate, bound verification time
+- **19.** Proving NP-hardness via polynomial-time reduction
+- **20.** Proving NP-completeness — combining 18 and 19
